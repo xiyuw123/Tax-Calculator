@@ -3,13 +3,28 @@
 them.
 '''
 
-# we need numpy and json libraries
+# we need numpy and json libraries as well as regex support
 import numpy as np
 import json
+import re
 
 # local aliases for json functions
 dump = json.dump
-load = json.load
+loads = json.loads
+
+COMMENT_REGEX = re.compile('(?:#|//).*')
+
+
+def load_commented_json(file_name, comment_rgx=COMMENT_REGEX):
+    '''This function allows us to load JSON files containing both python
+    and JavaScript inline comments.
+    comment_rgx can optionally be set to something else.
+    Returns serialized python object.
+    '''
+    with open(file_name) as json_file:
+        file_str = json_file.read()
+    no_comments = comment_rgx.sub('', file_str)
+    return loads(no_comments, object_hook=list_to_array)
 
 
 def read_plans(planX_file_name, planY_file_name=None):
@@ -18,13 +33,11 @@ def read_plans(planX_file_name, planY_file_name=None):
     between the two and updates plan X with parameters from plan Y.
     '''
     # load planX
-    with open(planX_file_name) as planX_file:
-        planX = load(planX_file, object_hook=list_to_array)
+    planX = load_commented_json(planX_file_name)
 
     if planY_file_name:
         # if given, load planY and proceed accordingly
-        with open(planY_file_name) as planY_file:
-            planY = load(planY_file, object_hook=list_to_array)
+        planY = load_commented_json(planY_file_name)
 
         print_different_params(planX, planY)
         # incorporate planY into planX
@@ -72,6 +85,7 @@ def print_different_params(planX, user_planY):
     print ("Done comparing. "
         "If you didn't see any messages, none of the user-defined parameters "
         "differed from their defaults.")
+
 
 # class for converting json "lists" into numpy arrays
 class NumpyArrayJSON(json.JSONEncoder):
