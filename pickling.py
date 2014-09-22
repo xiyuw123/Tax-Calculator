@@ -38,7 +38,7 @@ def pickle_c_codes(f_name, output_filename):
     Because the C-code file is so large, we have to incrementally read it in,
     then turn every variable into an np.array, then pickle the result.
 
-    We should consider alternatives like memory map and PyTables.
+    There is an alternative to this method, see hdf5.py
     '''
     with open(f_name) as c_file:
         d = csv.DictReader(c_file)
