@@ -1,6 +1,6 @@
 # coding: utf-8
-''' This file provides functionality for reading properties files and updating
-them.
+''' This file provides functionality for reading properties files
+stored in JSON format.
 '''
 
 # we need numpy and json libraries as well as regex support
@@ -98,7 +98,7 @@ class NumpyArrayJSON(json.JSONEncoder):
         if isinstance(obj, np.ndarray):
             return obj.tolist()
         # otherwise return regular JSONEncoder default method
-        return super(NumpyArrayJSON, self).default(obj)     
+        return super(NumpyArrayJSON, self).default(obj)
 
 
 if __name__ == '__main__':
