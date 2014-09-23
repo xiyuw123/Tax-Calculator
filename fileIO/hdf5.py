@@ -2,6 +2,7 @@
 SAS into an HDF5 file. This facilitates faster access later on.
 '''
 import pandas as pd
+import numpy as np
 import h5py as h5
 import os
 
@@ -16,7 +17,12 @@ def sas_output_to_hd5(c_codes_path, h5_path='SAS_codes.h5'):
     # this is just for development
     from time import time
     # load SAS csv in chunks, converting all values to np.float type
-    sas_csv_iter = pd.read_csv(c_codes_path, chunksize=100, dtype=np.float64)    
+    # Note that chunksize can be set to fairly large numbers, depending on 
+    # how much memory your machine has. Also note that there is a tradeoff 
+    # between the amount of memory you use up and the speed of this function,
+    # so you may want to play around with a couple of values for this
+    # parameter to determine what works best for you
+    sas_csv_iter = pd.read_csv(c_codes_path, chunksize=40000, dtype=np.float64)    
     try:
         # try creating hdf5 file
         hd5_file = h5.File(h5_path, 'w')
@@ -44,6 +50,7 @@ def sas_output_to_hd5(c_codes_path, h5_path='SAS_codes.h5'):
                 # and compressed dataset for it using first chunk as data
                 hd5_file.create_dataset(var, data=no_NAs[var],
                     maxshape=(None,), compression='gzip')
+        print 'Took {} seconds for this chunk'.format(time() - start)
                 # raise
     hd5_file.close()
     print 'Took {} seconds'.format(time() - start)
