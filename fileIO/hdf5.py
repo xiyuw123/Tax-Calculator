@@ -49,4 +49,4 @@ def sas_output_to_hd5(c_codes_path, h5_path='SAS_codes.h5'):
     print 'Took {} seconds'.format(time() - start)
 
 if __name__ == '__main__':
-    sas_output_to_hd5('test/data/withc_2013.csv')
+    sas_output_to_hd5('../test/data/withc_2013.csv')
