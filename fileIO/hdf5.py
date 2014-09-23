@@ -4,8 +4,6 @@ SAS into an HDF5 file. This facilitates faster access later on.
 import pandas as pd
 import h5py as h5
 import os
-# this is just for development 
-from time import time
 
 
 def sas_output_to_hd5(c_codes_path, h5_path='SAS_codes.h5'):
@@ -15,6 +13,8 @@ def sas_output_to_hd5(c_codes_path, h5_path='SAS_codes.h5'):
     By default will create latter in current working dir, overwriting all files
     with the same name.
     '''
+    # this is just for development
+    from time import time
     # load SAS csv in chunks, converting all values to np.float type
     sas_csv_iter = pd.read_csv(c_codes_path, chunksize=100, dtype=np.float64)    
     try:
