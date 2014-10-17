@@ -4,20 +4,12 @@ This file reads input csv file and saves the variables
 
 import pandas as pd
 import numpy as np
-import os.path
+from collections import defaultdict
 
-cur_path = os.path.abspath(os.path.dirname(__file__))
-input_filename = os.path.join(cur_path, '..', 'puf2.csv')
-x = pd.read_csv(input_filename)
+dim = 10
+array_factory = lambda: np.zeros((dim,))
 
-dim = len(x)
-
-names = x.columns.values
-
-y = {}
-
-for n in names:
-    y[n] = np.array(x[n])
+y = defaultdict(array_factory)
 
 AGIR1 = y['agir1']
 DSI = y['dsi']
@@ -387,5 +379,4 @@ SOIYR = np.repeat(2008, dim)
 xtxcr1xtxcr10 = np.zeros((dim,))
 
 
-
-__all__ = [x for x in locals() if "__" not in x]
+__all__ = [x for x in locals().keys() if "__" not in x]
