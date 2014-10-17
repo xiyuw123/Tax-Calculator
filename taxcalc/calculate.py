@@ -3,8 +3,6 @@ from pandas import DataFrame
 import math
 import numpy as np
 
-output_filename = 'translationoutput.csv' 
-
 from taxcalc.constants import *
 from taxcalc.puf import *
 
