@@ -773,11 +773,6 @@ def AMTI(       c60000, _exact, e60290, _posagi, e07300, x60260, c24517,
     c62770 = 0.25 * _amt25pc
     
     _tamt2 = c62747 + c62755 + c62770
- 
-
-    #NOTICE: for after 2013 only, original SAS code:
-    #if FLPDYR eq 2013 then do;
-    #    if _ngamty gt _brk6{FLPDYR,MARS} then...
 
     _amt = 0.
   
@@ -797,9 +792,6 @@ def AMTI(       c60000, _exact, e60290, _posagi, e07300, x60260, c24517,
     c63000 = c62800 - c62900
     c63100 = _taxbc - e07300 - c05700
     c63100 = c63100 + e10105 
-
-    #NOTICE: will need to change here, original SAS code:
-    #if FLPDYR ge 2011 then c63100 = c63100 + e10105;
 
     c63100 = max(0., c63100)
 
@@ -832,13 +824,14 @@ def MUI(c00100, NIIT_thd, MARS, e00300, e00600, c01000, e02000, NIIT_trt, NIIT, 
 @iterate_jit(parameters=["DCC_c", "puf"], nopython=True, puf=True)
 def F2441(_earned, _fixeic, e59560, MARS, f2441, DCC_c,
                e32800, e32750 , e32775, CDOB1, CDOB2, e32890, e32880, FLPDYR, puf):
-
+    #form 2441, part II
     if _fixeic == 1: 
-        _earned = e59560
+        _earned = e59560 #earned income
 
+    #Calculates primary and secondary earned income
     if MARS == 2 and puf == True:
-        if e32890 != 0:
-            c32880 = 0.5 * _earned
+        if e32890 != 0: 
+            c32880 = 0.5 * _earned #???: why do this calculation?
             c32890 = 0.5 * _earned
         else:
             c32880 = max(0., e32880)
@@ -857,9 +850,11 @@ def F2441(_earned, _fixeic, e59560, MARS, f2441, DCC_c,
     else:
         _ncu13 = f2441
         
+    #line 3
     _dclim = min(_ncu13, 2.) * DCC_c
     
     c32800 = min(max(e32800, e32750 + e32775), _dclim)
+    #qualifying indiv child care exp
 
     #TODO deal with these types
     _earned = float(_earned)
@@ -875,10 +870,13 @@ def F2441(_earned, _fixeic, e59560, MARS, f2441, DCC_c,
 def DepCareBen(c32800, _cmp, MARS, c32880, c32890, e33420, e33430, e33450, 
                     e33460, e33465, e33470, _sep, _dclim, e32750, e32775, 
                     _earned):
-
-    # Part III ofdependent care benefits
+    #form 2441
+    
+    # Part III of dependent care benefits
+    #line 15
     if _cmp == 1  and MARS == 2:
         _seywage = min(c32880, c32890, e33420 + e33430 - e33450, e33460)
+        # = min(prim earned income, ???, emply benefits + amt forfeited - dep care ben, dep care exps)
     else: 
 
         _seywage = 0.
@@ -887,18 +885,25 @@ def DepCareBen(c32800, _cmp, MARS, c32880, c32890, e33420, e33430, e33450,
         _seywage = min(c32880, c32890, e33420 + e33430 - e33450, e33460)
    
     if _cmp == 1:
-        c33465 = e33465
-        c33470 = e33470
+    #note: none of the ecodes in the calculations here exist in the 2008 PUF
+        c33465 = e33465 
+        #line 22, amt from sole prop/part
+        c33470 = e33470 
+        #line 24, deductible benefits
         c33475 = max(0., min(_seywage, 5000 / _sep) - c33470)
+        #line 25, excluded benefits
         c33480 = max(0., e33420 + e33430 - e33450 - c33465 - c33475)
+        #line 26, taxable dependent care benefits
         c32840 = c33470 + c33475
-
+        #line 28, = deductible benefits + excluded benefits
         c32800 = min(max(0., _dclim - c32840), max(0., e32750 + e32775 - c32840))
+        #line 31, qualifying individual expenses
 
     else: 
         c33465, c33470, c33475, c33480, c32840 = 0.,0.,0.,0.,0.
-        c32800 = c32800
+        c32800 = c32800 #???: redundant code?
 
+    #Part II, line 6, expenditures limited to earned income
     if MARS == 2:
         c33000 = max(0, min(c32800, min(c32880, c32890)))
     else: 
@@ -912,26 +917,31 @@ def DepCareBen(c32800, _cmp, MARS, c32880, c32890, e33420, e33430, e33450,
 @iterate_jit(parameters=["CDCC_crt", "CDCC_ps"], nopython=True)
 def ExpEarnedInc(  _exact, c00100, CDCC_ps, CDCC_crt,
                         c33000, c05800, e07300, e07180):
+    #form 2441, part II
     # Expenses limited to earned income
+    # Also calculates phaseout rates
 
+    #lines 8, 9
     if _exact == 1: 
 
         _tratio = float(math.ceil(max((c00100 - CDCC_ps)
                 / 2000, 0.)))
 
         c33200 = c33000 * 0.01 * max(20., CDCC_crt - min(15., _tratio))
-
     
     else: 
-        _tratio = 0.
+        _tratio = 0. #???: why set _tratio here at all? Not used in any other function
 
         c33200 = c33000 * 0.01 * max(20., CDCC_crt
-                - max((c00100 - CDCC_ps) / 2000, 0.))
+                - max((c00100 - CDCC_ps) / 2000, 0.)) #???: should there be a math.ceil function here?
 
+    #line 10, Credit limit worksheet
     c33400 = min(max(0., c05800 - e07300), c33200)
+    #form 2441 credit = min(max(0, tax before credits - foreign tax credit), curr year expense credit)
 
     # amount of the credit
 
+    #line 11
     if e07180 == 0:
 
         c07180 = 0.
@@ -1053,7 +1063,7 @@ def ChildTaxCredit(n24, MARS, CTC_c, c00100, _feided, CTC_ps, _exact,
 
     _precrd = CTC_c * _nctcr
 
-    _ctcagi = c00100 + _feided
+    _ctcagi = c00100 + _feided #AGI + foreign earned income 
 
     if _ctcagi > CTC_ps[MARS - 1] and _exact == 1:
         _precrd = max(0., _precrd - CTC_prt* 
@@ -1076,8 +1086,10 @@ def ChildTaxCredit(n24, MARS, CTC_c, c00100, _feided, CTC_ps, _exact,
 @iterate_jit(nopython=True)
 def AmOppCr(_cmp, e87482, e87487, e87492, e87497):
     # American Opportunity Credit 2009+
+    # Form 8863, part III
 
     if _cmp == 1:
+        #ecodes in calculation don't exist in puf file
 
         c87482 = max(0., min(e87482, 4000.))
         c87487 = max(0., min(e87487, 4000.))
@@ -1118,18 +1130,19 @@ def AmOppCr(_cmp, e87482, e87487, e87492, e87497):
 def LLC(e87530, LLC_Expense_c, e87526, e87522, e87524, e87528, c87540, c87550, puf):
 
     # Lifetime Learning Credit
+    # Form 8863
 
-
+    #line 11
     if puf == True:
         c87540 = float(min(e87530, LLC_Expense_c))
-        c87530 = 0.
+        c87530 = 0. #???: why is this set to 0?
     else:
-        c87530 = e87526 + e87522 + e87524 + e87528
+        c87530 = e87526 + e87522 + e87524 + e87528 #Lifetime learning total qualified expenses, line 10
         c87540 = float(min(c87530, LLC_Expense_c))
 
-
-    c87550 = 0.2 * c87540
-
+    #line 12
+    c87550 = 0.2 * c87540 
+    
     return (c87540, c87550, c87530)
 
 
@@ -1138,16 +1151,19 @@ def LLC(e87530, LLC_Expense_c, e87526, e87522, e87524, e87528, c87540, c87550, p
 def RefAmOpp(_cmp, c87521, _num, c00100, EDCRAGE, c87668):
     # Refundable American Opportunity Credit 2009+
 
+    #form 8863
     if _cmp == 1 and c87521 > 0: 
-        c87654 = 90000 * _num 
-        c87656 = c00100
-        c87658 = np.maximum(0., c87654 - c87656)
-        c87660 = 10000 * _num
-        c87662 = 1000 * np.minimum(1., c87658 / c87660)
-        c87664 = c87662 * c87521 / 1000.0
+        c87654 = 90000 * _num #line 2
+        c87656 = c00100 #line 3
+        c87658 = np.maximum(0., c87654 - c87656) #line 4
+        c87660 = 10000 * _num #line 5
+        c87662 = 1000 * np.minimum(1., c87658 / c87660) #line 6
+        #???: multiplying by 1000 here is pointless, we divide by 1000 in next line
+        c87664 = c87662 * c87521 / 1000.0 #line 7
     else: 
         c87654, c87656, c87658, c87660, c87662, c87664 = 0., 0., 0., 0., 0., 0.
 
+    #line 8
     if _cmp == 1 and c87521 > 0 and EDCRAGE == 1: 
         c87666 = 0.
     else: 
@@ -1155,8 +1171,9 @@ def RefAmOpp(_cmp, c87521, _num, c00100, EDCRAGE, c87668):
 
     if c87521 > 0 and _cmp == 1:
         c10960 = c87666
-        c87668 = c87664 - c87666
-        c87681 = c87666
+        c87668 = c87664 - c87666 #line 9
+        c87681 = c87666 
+        #???: 87681 is only ever used in this function, does not seem to have purpose right now
 
     else: c10960, c87668, c87681 = 0., 0., 0.
 
@@ -1172,49 +1189,59 @@ def NonEdCr(c87550, MARS, ETC_pe_Married, c00100, _num,
 
     # Nonrefundable Education Credits
     # Form 8863 Tentative Education Credits
-    c87560 = c87550
 
-    # Phase Out
+    c87560 = c87550 #set lifetime learning credit to max lifetime learning
+
+    # Phase Out, line 13
     if MARS == 2:
         c87570 = float(ETC_pe_Married * 1000)
     else:
         c87570 = float(ETC_pe_Single * 1000)
 
-    c87580 = float(c00100)
+    c87580 = float(c00100) #AGI amt, line 14
 
-    c87590 = max(0., c87570 - c87580)
+    c87590 = max(0., c87570 - c87580) #AGI limit, line 15
 
-    c87600 = 10000.0 * _num
+    c87600 = 10000.0 * _num #credit limit, line 16
 
-    c87610 = min(1., float(c87590 / c87600))
+    c87610 = min(1., float(c87590 / c87600)) #line 17
 
-    c87620 = c87560 * c87610
+    c87620 = c87560 * c87610 #line 18
 
-    #NOTICE: may need to change. Original SAS code:
-    #else if FLPDYR eq 2010 or FLPDYR eq 2011 then do;
-    #_xlin4 = max(0,c05800 - (e07300 + c07180 + e07200));...
-    #Updated code
-
+    #Form 8863, credit limit worksheet
     if FLPDYR == 2011:
-        _xlin4 = max(0,c05800 - (e07300 + c07180 + e07200));
-        _xlin5 = min(c87620,_xlin4);
-        _xlin8 = e07300 + c07180 + e07200 + _xlin5;
-        _xlin9 = max(0,c05800 - (e07300 + c07180 + e07200 + _xlin5));
-        _xlin10 = min(c87668,_xlin9);
-        c87680 = _xlin5 + _xlin10;
-        c07230 = c87680
+        _xlin4 = max(0,c05800 - (e07300 + c07180 + e07200))
+        _xlin5 = min(c87620,_xlin4)
+        _xlin8 = e07300 + c07180 + e07200 + _xlin5
+        _xlin9 = max(0,c05800 - (e07300 + c07180 + e07200 + _xlin5))
+        _xlin10 = min(c87668,_xlin9)
+        c87680 = _xlin5 + _xlin10
+        c07230 = c87680 #???: can just do c07230 = _xlin5 + _xlin10
+    #???: Proposed Changes
+    else:
+        _xlin3 = c87668 + c87620
+        _xlin6 = max(0,c05800 - (e07300 + c07180 + e07200))
+        c07230 = min(_xlin3, _xlin6)
+    
+
+    #everything below this point is used to calculate child tax credit
 
     _ctc1 = c07180 + e07200 + c07230
+    # = child care credit + elderly/disabled credit + educ credit
 
     _ctc2 = e07240 + e07960 + e07260 + e07300
+    # = retirement savings + qualified elec vehicle + res energy + foreign tax credit
 
     _regcrd = _ctc1 + _ctc2
+    # might stand for regular credits?
 
     _exocrd = e07700 + e07250
+    # = mortgage int + adoption credit
 
-    _exocrd = _exocrd + t07950
+    _exocrd = _exocrd + t07950 #not sure what this is
 
     _ctctax = c05800 - _regcrd - _exocrd
+    #calculates tax after credits
 
     c07220 = min(_precrd, max(0., _ctctax))
     # lt tax owed
@@ -1336,7 +1363,7 @@ def C1040( e07400, e07180, e07200, c07220, c07230, e07250,
                 c59660, c07180, _eitc, c59680, NIIT,_amed, puf ):
 
     # Allocate credits to tax in order on the tax form
-    _avail = c05800
+    _avail = c05800 #adj income before credits
     c07180 = min(c07180,_avail) #child care credit
     _avail = _avail - c07180
     _avail = max(0,_avail - e07200)
@@ -1436,9 +1463,7 @@ def DEITC(c08795, c59660, c09200, c07100, c08800, c05800, _othertax, e11601, FLP
         _compb = 0.
 
     c07150 = c07100 + c59680
-    #NOTICE: may need to change, original SAS code: 
-    #if FLPDYR in(2011:2012) then c07150 = c07100 + e11601;
-    #Updated code
+
     if (FLPDYR == 2011 | FLPDYR == 2012):
         c07150 = c07100 + e11601
     c07150 = c07150
@@ -1455,8 +1480,16 @@ def OSPC_TAX( c09200, c59660, c11070, c10960, c11600, c10950 , _eitc, e11580,
 
     _refund = (c59660 + c11070 + c11600 + c10960 + c10950 + e11580 + e11450 +
                e11500)
+    #refund = EIC + add. child credit + ??? + ref. edu credit + homebuyer credit + ?? +
+    # ???
+
+    #Can't find the ??'s anywhere else in the file or PUF
+
+    #Should probably include 11400 (investment company credit), 07250 (adoption credit), 
+    #07600 (prior year min tax), health insurance tax credit (???)
     
     _ospctax = c09200 - _refund - e82040
+    # = total tax liability - refund - ???
     
     _payments = e09900 + e11500 + e11400 + e11300 + e11200 + e11100 + e11550 + e11450
 
@@ -1476,8 +1509,6 @@ def OSPC_TAX( c09200, c59660, c11070, c10960, c11600, c10950 , _eitc, e11580,
 def Taxer_i(inc_in, MARS, II_rt1, II_rt2, II_rt3, II_rt4, II_rt5, II_rt6, II_rt7,
             II_brk1, II_brk2, II_brk3, II_brk4, II_brk5, II_brk6):
    
-#NOTICE: Will need to change, II_brk6 and II_rt7 do not exist for 2011/2013
-#updated code
     _a6 = inc_in
 
     inc_out = (II_rt1 * min(_a6, II_brk1[MARS - 1])
